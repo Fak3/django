@@ -54,7 +54,9 @@ if "install" in sys.argv:
 
 EXCLUDE_FROM_PACKAGES = ['django.conf.project_template',
                          'django.conf.app_template',
-                         'django.bin']
+                         'django.bin',
+                         'django.contrib',
+                         'django.contrib.*']
 
 
 # Dynamically calculate the version based on django.VERSION.
@@ -78,7 +80,7 @@ setup(
     long_description=read('README.rst'),
     license='BSD',
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
-    include_package_data=True,
+    include_package_data=False,
     scripts=['django/bin/django-admin.py'],
     entry_points={'console_scripts': [
         'django-admin = django.core.management:execute_from_command_line',
