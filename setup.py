@@ -69,14 +69,13 @@ def read(fname):
 
 
 setup(
-    name='Django',
+    name='minidjango',
     version=version,
     python_requires='>={}.{}'.format(*REQUIRED_PYTHON),
-    url='https://www.djangoproject.com/',
-    author='Django Software Foundation',
-    author_email='foundation@djangoproject.com',
-    description=('A high-level Python Web framework that encourages '
-                 'rapid development and clean, pragmatic design.'),
+    url='https://github.com/Fak3/minidjango',
+    author='Evstifeev Roman',
+    author_email='someuniquename@gmail.com',
+    description=('Django stripped down'),
     long_description=read('README.rst'),
     license='BSD',
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
@@ -113,8 +112,8 @@ setup(
     project_urls={
         'Documentation': 'https://docs.djangoproject.com/',
         'Funding': 'https://www.djangoproject.com/fundraising/',
-        'Source': 'https://github.com/django/django',
-        'Tracker': 'https://code.djangoproject.com/',
+        'Source': 'https://github.com/Fak3/minidjango',
+        'Tracker': 'https://github.com/Fak3/minidjango/issues',
     },
 )
 
