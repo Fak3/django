@@ -42,18 +42,15 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
     def get_table_list(self, cursor):
         """Return a list of table and view names in the current database."""
         cursor.execute("""
-            SELECT c.relname, c.relkind
+            SELECT c.relname,
+            CASE WHEN {} THEN 'p' WHEN c.relkind IN ('m', 'v') THEN 'v' ELSE 't' END
             FROM pg_catalog.pg_class c
             LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-            WHERE c.relkind IN ('f', 'm', 'r', 'v')
+            WHERE c.relkind IN ('f', 'm', 'p', 'r', 'v')
                 AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
                 AND pg_catalog.pg_table_is_visible(c.oid)
-        """)
-        mapping = {'f': 't', 'm': 'v', 'r': 't', 'v': 'v'}
-        return [
-            TableInfo(row[0], mapping[row[1]])
-            for row in cursor.fetchall() if row[0] not in self.ignored_tables
-        ]
+        """.format('c.relispartition' if self.connection.features.supports_table_partitions else 'FALSE'))
+        return [TableInfo(*row) for row in cursor.fetchall() if row[0] not in self.ignored_tables]
 
     def get_table_description(self, cursor, table_name):
         """
@@ -73,14 +70,25 @@ class DatabaseIntrospection(BaseDatabaseIntrospection):
             JOIN pg_type t ON a.atttypid = t.oid
             JOIN pg_class c ON a.attrelid = c.oid
             JOIN pg_namespace n ON c.relnamespace = n.oid
-            WHERE c.relkind IN ('f', 'm', 'r', 'v')
+            WHERE c.relkind IN ('f', 'm', 'p', 'r', 'v')
                 AND c.relname = %s
                 AND n.nspname NOT IN ('pg_catalog', 'pg_toast')
                 AND pg_catalog.pg_table_is_visible(c.oid)
         """, [table_name])
         field_map = {line[0]: line[1:] for line in cursor.fetchall()}
         cursor.execute("SELECT * FROM %s LIMIT 1" % self.connection.ops.quote_name(table_name))
-        return [FieldInfo(*line[0:6], *field_map[line.name]) for line in cursor.description]
+        return [
+            FieldInfo(
+                line.name,
+                line.type_code,
+                line.display_size,
+                line.internal_size,
+                line.precision,
+                line.scale,
+                *field_map[line.name],
+            )
+            for line in cursor.description
+        ]
 
     def get_sequences(self, cursor, table_name, table_fields=()):
         cursor.execute("""

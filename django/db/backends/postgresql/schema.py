@@ -22,7 +22,10 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
     sql_delete_procedure = 'DROP FUNCTION %(procedure)s(%(param_types)s)'
 
     def quote_value(self, value):
-        return psycopg2.extensions.adapt(value)
+        if isinstance(value, str):
+            value = value.replace('%', '%%')
+        # getquoted() returns a quoted bytestring of the adapted value.
+        return psycopg2.extensions.adapt(value).getquoted().decode()
 
     def _field_indexes_sql(self, model, field):
         output = super()._field_indexes_sql(model, field)
@@ -114,7 +117,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             (old_type.startswith('citext') and not new_type.startswith('citext'))
         ):
             index_name = self._create_index_name(model._meta.db_table, [old_field.column], suffix='_like')
-            self.execute(self._delete_constraint_sql(self.sql_delete_index, model, index_name))
+            self.execute(self._delete_index_sql(model, index_name))
 
         super()._alter_field(
             model, old_field, new_field, old_type, new_type, old_db_params,
@@ -130,7 +133,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         # Removed an index? Drop any PostgreSQL-specific indexes.
         if old_field.unique and not (new_field.db_index or new_field.unique):
             index_to_remove = self._create_index_name(model._meta.db_table, [old_field.column], suffix='_like')
-            self.execute(self._delete_constraint_sql(self.sql_delete_index, model, index_to_remove))
+            self.execute(self._delete_index_sql(model, index_to_remove))
 
     def _index_columns(self, table, columns, col_suffixes, opclasses):
         if opclasses:

@@ -372,6 +372,17 @@ Oracle                      ``SDO_GEOM.VALIDATE_GEOMETRY_WITH_CONTEXT(poly, 0.05
 *Availability*: `PostGIS <https://postgis.net/docs/ST_Overlaps.html>`__,
 Oracle, MySQL, SpatiaLite, PGRaster (Bilateral)
 
+Tests if the geometry field spatially overlaps the lookup geometry.
+
+==========  ============================
+Backend     SQL Equivalent
+==========  ============================
+PostGIS     ``ST_Overlaps(poly, geom)``
+Oracle      ``SDO_OVERLAPS(poly, geom)``
+MySQL       ``MBROverlaps(poly, geom)``
+SpatiaLite  ``Overlaps(poly, geom)``
+==========  ============================
+
 .. fieldlookup:: relate
 
 ``relate``
@@ -788,7 +799,8 @@ Keyword Argument       Description
                        details.
 =====================  =====================================================
 
-__ https://docs.oracle.com/database/121/SPATL/GUID-3BD00273-E74F-4830-9444-A3BB15AA0AC4.htm#SPATL466
+__ https://docs.oracle.com/en/database/oracle/oracle-database/18/spatl/
+   spatial-concepts.html#GUID-CE10AB14-D5EA-43BA-A647-DAC9EEF41EE6
 
 Example::
 
@@ -885,5 +897,8 @@ Example::
 
 .. rubric:: Footnotes
 .. [#fnde9im] *See* `OpenGIS Simple Feature Specification For SQL <http://www.opengis.org/docs/99-049.pdf>`_, at Ch. 2.1.13.2, p. 2-13 (The Dimensionally Extended Nine-Intersection Model).
-.. [#fnsdorelate] *See* `SDO_RELATE documentation <https://docs.oracle.com/database/121/SPATL/sdo_relate.htm#SPATL1039>`_, from the Oracle Spatial and Graph Developer's Guide.
+.. [#fnsdorelate] *See* `SDO_RELATE documentation <https://docs.oracle.com/en/
+   database/oracle/oracle-database/18/spatl/spatial-operators-reference.html#
+   GUID-97C17C18-F05E-49B4-BE11-E89B972E2A02>`_, from the Oracle Spatial and
+   Graph Developer's Guide.
 .. [#fncovers] For an explanation of this routine, read `Quirks of the "Contains" Spatial Predicate <https://lin-ear-th-inking.blogspot.com/2007/06/subtleties-of-ogc-covers-spatial.html>`_ by Martin Davis (a PostGIS developer).

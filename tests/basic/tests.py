@@ -372,15 +372,16 @@ class ModelTest(TestCase):
 
 
 class ModelLookupTest(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create an Article.
-        self.a = Article(
+        cls.a = Article(
             id=None,
             headline='Swallow programs in Python',
             pub_date=datetime(2005, 7, 28),
         )
         # Save it into the database. You have to call save() explicitly.
-        self.a.save()
+        cls.a.save()
 
     def test_all_lookup(self):
         # Change values by changing the attributes, then calling save().
@@ -648,6 +649,12 @@ class ModelRefreshTests(TestCase):
         msg = "refresh_from_db() got an unexpected keyword argument 'unknown_kwarg'"
         with self.assertRaisesMessage(TypeError, msg):
             s.refresh_from_db(unknown_kwarg=10)
+
+    def test_lookup_in_fields(self):
+        s = SelfRef.objects.create()
+        msg = 'Found "__" in fields argument. Relations and transforms are not allowed in fields.'
+        with self.assertRaisesMessage(ValueError, msg):
+            s.refresh_from_db(fields=['foo__bar'])
 
     def test_refresh_fk(self):
         s1 = SelfRef.objects.create()

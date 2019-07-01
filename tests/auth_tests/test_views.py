@@ -319,7 +319,7 @@ class PasswordResetTest(AuthViewsTestCase):
         ]
     )
     def test_confirm_login_post_reset_custom_backend(self):
-        # This backend is specified in the url().
+        # This backend is specified in the URL pattern.
         backend = 'django.contrib.auth.backends.AllowAllUsersModelBackend'
         url, path = self._test_confirm_start()
         path = path.replace('/reset/', '/reset/post_reset_login_custom_backend/')
@@ -855,7 +855,7 @@ class LoginRedirectAuthenticatedUser(AuthViewsTestCase):
         self.login()
         msg = (
             "Redirection loop for authenticated user detected. Check that "
-            "your LOGIN_REDIRECT_URL doesn't point to a login page"
+            "your LOGIN_REDIRECT_URL doesn't point to a login page."
         )
         with self.settings(LOGIN_REDIRECT_URL=self.do_redirect_url):
             with self.assertRaisesMessage(ValueError, msg):
@@ -1109,10 +1109,15 @@ def get_perm(Model, perm):
 @override_settings(ROOT_URLCONF='auth_tests.urls_admin')
 class ChangelistTests(AuthViewsTestCase):
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
         # Make me a superuser before logging in.
         User.objects.filter(username='testclient').update(is_staff=True, is_superuser=True)
+
+    def setUp(self):
         self.login()
+        # Get the latest last_login value.
         self.admin = User.objects.get(pk=self.u1.pk)
 
     def get_user_data(self, user):

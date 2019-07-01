@@ -1,0 +1,18 @@
+==========================
+Django 2.2.3 release notes
+==========================
+
+*Expected July 1, 2019*
+
+Django 2.2.3 fixes several bugs in 2.2.2. Also, the latest string translations
+from Transifex are incorporated.
+
+Bugfixes
+========
+
+* Fixed a regression in Django 2.2 where :class:`~django.db.models.Avg`,
+  :class:`~django.db.models.StdDev`, and :class:`~django.db.models.Variance`
+  crash with ``filter`` argument (:ticket:`30542`).
+
+* Fixed a regression in Django 2.2.2 where auto-reloader crashes with
+  ``AttributeError``, e.g. when using ``ipdb`` (:ticket:`30588`).

@@ -807,7 +807,7 @@ class Field(RegisterLookupMixin):
             return return_None
         return str  # return empty string
 
-    def get_choices(self, include_blank=True, blank_choice=BLANK_CHOICE_DASH, limit_choices_to=None):
+    def get_choices(self, include_blank=True, blank_choice=BLANK_CHOICE_DASH, limit_choices_to=None, ordering=()):
         """
         Return choices with a default blank choices included, for use
         as <select> choices for this field.
@@ -828,7 +828,7 @@ class Field(RegisterLookupMixin):
         )
         return (blank_choice if include_blank else []) + [
             (choice_func(x), str(x))
-            for x in rel_model._default_manager.complex_filter(limit_choices_to)
+            for x in rel_model._default_manager.complex_filter(limit_choices_to).order_by(*ordering)
         ]
 
     def value_to_string(self, obj):
@@ -854,9 +854,11 @@ class Field(RegisterLookupMixin):
 
     def formfield(self, form_class=None, choices_form_class=None, **kwargs):
         """Return a django.forms.Field instance for this field."""
-        defaults = {'required': not self.blank,
-                    'label': capfirst(self.verbose_name),
-                    'help_text': self.help_text}
+        defaults = {
+            'required': not self.blank,
+            'label': capfirst(self.verbose_name),
+            'help_text': self.help_text,
+        }
         if self.has_default():
             if callable(self.default):
                 defaults['initial'] = self.default
@@ -1773,7 +1775,7 @@ class IntegerField(Field):
         if self.max_length is not None:
             return [
                 checks.Warning(
-                    "'max_length' is ignored when used with IntegerField",
+                    "'max_length' is ignored when used with %s." % self.__class__.__name__,
                     hint="Remove 'max_length' from field",
                     obj=self,
                     id='fields.W122',
@@ -1788,13 +1790,25 @@ class IntegerField(Field):
         validators_ = super().validators
         internal_type = self.get_internal_type()
         min_value, max_value = connection.ops.integer_field_range(internal_type)
-        if (min_value is not None and not
-            any(isinstance(validator, validators.MinValueValidator) and
-                validator.limit_value >= min_value for validator in validators_)):
+        if min_value is not None and not any(
+            (
+                isinstance(validator, validators.MinValueValidator) and (
+                    validator.limit_value()
+                    if callable(validator.limit_value)
+                    else validator.limit_value
+                ) >= min_value
+            ) for validator in validators_
+        ):
             validators_.append(validators.MinValueValidator(min_value))
-        if (max_value is not None and not
-            any(isinstance(validator, validators.MaxValueValidator) and
-                validator.limit_value <= max_value for validator in validators_)):
+        if max_value is not None and not any(
+            (
+                isinstance(validator, validators.MaxValueValidator) and (
+                    validator.limit_value()
+                    if callable(validator.limit_value)
+                    else validator.limit_value
+                ) <= max_value
+            ) for validator in validators_
+        ):
             validators_.append(validators.MaxValueValidator(max_value))
         return validators_
 
@@ -1827,7 +1841,6 @@ class IntegerField(Field):
 
 
 class BigIntegerField(IntegerField):
-    empty_strings_allowed = False
     description = _("Big (8 byte) integer")
     MAX_BIGINT = 9223372036854775807
 
@@ -2292,7 +2305,7 @@ class UUIDField(Field):
     default_error_messages = {
         'invalid': _("'%(value)s' is not a valid UUID."),
     }
-    description = 'Universally unique identifier'
+    description = _('Universally unique identifier')
     empty_strings_allowed = False
 
     def __init__(self, verbose_name=None, **kwargs):

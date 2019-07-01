@@ -80,21 +80,21 @@ If a field has ``blank=False``, the field will be required.
 
 .. attribute:: Field.choices
 
-An iterable (e.g., a list or tuple) consisting itself of iterables of exactly
-two items (e.g. ``[(A, B), (A, B) ...]``) to use as choices for this field. If
-choices are given, they're enforced by :ref:`model validation
-<validating-objects>` and the default form widget will be a select box with
-these choices instead of the standard text field.
+A :term:`sequence` consisting itself of iterables of exactly two items (e.g.
+``[(A, B), (A, B) ...]``) to use as choices for this field. If choices are
+given, they're enforced by :ref:`model validation <validating-objects>` and the
+default form widget will be a select box with these choices instead of the
+standard text field.
 
 The first element in each tuple is the actual value to be set on the model,
 and the second element is the human-readable name. For example::
 
-    YEAR_IN_SCHOOL_CHOICES = (
+    YEAR_IN_SCHOOL_CHOICES = [
         ('FR', 'Freshman'),
         ('SO', 'Sophomore'),
         ('JR', 'Junior'),
         ('SR', 'Senior'),
-    )
+    ]
 
 Generally, it's best to define choices inside a model class, and to
 define a suitably-named constant for each value::
@@ -106,12 +106,12 @@ define a suitably-named constant for each value::
         SOPHOMORE = 'SO'
         JUNIOR = 'JR'
         SENIOR = 'SR'
-        YEAR_IN_SCHOOL_CHOICES = (
+        YEAR_IN_SCHOOL_CHOICES = [
             (FRESHMAN, 'Freshman'),
             (SOPHOMORE, 'Sophomore'),
             (JUNIOR, 'Junior'),
             (SENIOR, 'Senior'),
-        )
+        ]
         year_in_school = models.CharField(
             max_length=2,
             choices=YEAR_IN_SCHOOL_CHOICES,
@@ -130,7 +130,7 @@ will work anywhere that the ``Student`` model has been imported).
 You can also collect your available choices into named groups that can
 be used for organizational purposes::
 
-    MEDIA_CHOICES = (
+    MEDIA_CHOICES = [
         ('Audio', (
                 ('vinyl', 'Vinyl'),
                 ('cd', 'CD'),
@@ -142,7 +142,7 @@ be used for organizational purposes::
             )
         ),
         ('unknown', 'Unknown'),
-    )
+    ]
 
 The first element in each tuple is the name to apply to the group. The
 second element is an iterable of 2-tuples, with each 2-tuple containing
@@ -155,11 +155,14 @@ method to retrieve the human-readable name for the field's current value. See
 :meth:`~django.db.models.Model.get_FOO_display` in the database API
 documentation.
 
-Note that choices can be any iterable object -- not necessarily a list or tuple.
-This lets you construct choices dynamically. But if you find yourself hacking
-:attr:`~Field.choices` to be dynamic, you're probably better off using a proper
-database table with a :class:`ForeignKey`. :attr:`~Field.choices` is meant for
-static data that doesn't change much, if ever.
+Note that choices can be any sequence object -- not necessarily a list or
+tuple. This lets you construct choices dynamically. But if you find yourself
+hacking :attr:`~Field.choices` to be dynamic, you're probably better off using
+a proper database table with a :class:`ForeignKey`. :attr:`~Field.choices` is
+meant for static data that doesn't change much, if ever.
+
+.. note::
+    A new migration is created each time the order of ``choices`` changes.
 
 Unless :attr:`blank=False<Field.blank>` is set on the field along with a
 :attr:`~Field.default` then a label containing ``"---------"`` will be rendered
@@ -697,17 +700,17 @@ The default form widget for this field is a
 Using a :class:`FileField` or an :class:`ImageField` (see below) in a model
 takes a few steps:
 
-1. In your settings file, you'll need to define :setting:`MEDIA_ROOT` as the
+#. In your settings file, you'll need to define :setting:`MEDIA_ROOT` as the
    full path to a directory where you'd like Django to store uploaded files.
    (For performance, these files are not stored in the database.) Define
    :setting:`MEDIA_URL` as the base public URL of that directory. Make sure
    that this directory is writable by the Web server's user account.
 
-2. Add the :class:`FileField` or :class:`ImageField` to your model, defining
+#. Add the :class:`FileField` or :class:`ImageField` to your model, defining
    the :attr:`~FileField.upload_to` option to specify a subdirectory of
    :setting:`MEDIA_ROOT` to use for uploaded files.
 
-3. All that will be stored in your database is a path to the file
+#. All that will be stored in your database is a path to the file
    (relative to :setting:`MEDIA_ROOT`). You'll most likely want to use the
    convenience :attr:`~django.db.models.fields.files.FieldFile.url` attribute
    provided by Django. For example, if your :class:`ImageField` is called
@@ -1478,10 +1481,9 @@ Behind the scenes, Django creates an intermediary join table to represent the
 many-to-many relationship. By default, this table name is generated using the
 name of the many-to-many field and the name of the table for the model that
 contains it. Since some databases don't support table names above a certain
-length, these table names will be automatically truncated to 64 characters and a
-uniqueness hash will be used. This means you might see table names like
-``author_books_9cdf4``; this is perfectly normal.  You can manually provide the
-name of the join table using the :attr:`~ManyToManyField.db_table` option.
+length, these table names will be automatically truncated and a uniqueness hash
+will be used, e.g. ``author_books_9cdf``. You can manually provide the name of
+the join table using the :attr:`~ManyToManyField.db_table` option.
 
 .. _manytomany-arguments:
 

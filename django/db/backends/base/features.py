@@ -1,5 +1,4 @@
-from django.db.models.aggregates import StdDev
-from django.db.utils import NotSupportedError, ProgrammingError
+from django.db.utils import ProgrammingError
 from django.utils.functional import cached_property
 
 
@@ -144,12 +143,19 @@ class BaseDatabaseFeatures:
     # Can the backend introspect a TimeField, instead of a DateTimeField?
     can_introspect_time_field = True
 
+    # Some backends may not be able to differentiate BigAutoField from other
+    # fields such as AutoField.
+    introspected_big_auto_field_type = 'BigAutoField'
+
     # Some backends may not be able to differentiate BooleanField from other
     # fields such as IntegerField.
     introspected_boolean_field_type = 'BooleanField'
 
     # Can the backend introspect the column order (ASC/DESC) for indexes?
     supports_index_column_ordering = True
+
+    # Does the backend support introspection of materialized views?
+    can_introspect_materialized_views = False
 
     # Support for the DISTINCT ON clause
     can_distinct_on_fields = False
@@ -200,8 +206,6 @@ class BaseDatabaseFeatures:
     # If NULL is implied on columns without needing to be explicitly specified
     implied_column_null = False
 
-    uppercases_column_names = False
-
     # Does the backend support "select for update" queries with limit (and offset)?
     supports_select_for_update_with_limit = True
 
@@ -225,6 +229,7 @@ class BaseDatabaseFeatures:
     supports_select_intersection = True
     supports_select_difference = True
     supports_slicing_ordering_in_compound = False
+    supports_parentheses_in_compound = True
 
     # Does the database support SQL 2003 FILTER (WHERE ...) in aggregate
     # expressions?
@@ -233,7 +238,7 @@ class BaseDatabaseFeatures:
     # Does the backend support indexing a TextField?
     supports_index_on_text_field = True
 
-    # Does the backed support window expressions (expression OVER (...))?
+    # Does the backend support window expressions (expression OVER (...))?
     supports_over_clause = False
 
     # Does the backend support CAST with precision?
@@ -274,6 +279,11 @@ class BaseDatabaseFeatures:
 
     # Does the backend support partial indexes (CREATE INDEX ... WHERE ...)?
     supports_partial_indexes = True
+    supports_functions_in_partial_indexes = True
+
+    # Does the database allow more than one constraint or index on the same
+    # field(s)?
+    allows_multiple_constraints_on_same_fields = True
 
     def __init__(self, connection):
         self.connection = connection
@@ -296,12 +306,3 @@ class BaseDatabaseFeatures:
             count, = cursor.fetchone()
             cursor.execute('DROP TABLE ROLLBACK_TEST')
         return count == 0
-
-    @cached_property
-    def supports_stddev(self):
-        """Confirm support for STDDEV and related stats functions."""
-        try:
-            self.connection.ops.check_expression_support(StdDev(1))
-        except NotSupportedError:
-            return False
-        return True

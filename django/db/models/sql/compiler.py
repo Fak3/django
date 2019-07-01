@@ -17,6 +17,7 @@ from django.db.utils import DatabaseError, NotSupportedError
 from django.utils.deprecation import (
     RemovedInDjango30Warning, RemovedInDjango31Warning,
 )
+from django.utils.hashable import make_hashable
 from django.utils.inspect import func_supports_parameter
 
 FORCE = object()
@@ -135,9 +136,10 @@ class SQLCompiler:
                 # wrapping () because they could be removed when a subquery is
                 # the "rhs" in an expression (see Subquery._prepare()).
                 sql = '(%s)' % sql
-            if (sql, tuple(params)) not in seen:
+            params_hash = make_hashable(params)
+            if (sql, params_hash) not in seen:
                 result.append((sql, params))
-                seen.add((sql, tuple(params)))
+                seen.add((sql, params_hash))
         return result
 
     def collapse_group_by(self, expressions, having):
@@ -339,8 +341,9 @@ class SQLCompiler:
         seen = set()
 
         for expr, is_ref in order_by:
+            resolved = expr.resolve_expression(self.query, allow_joins=True, reuse=None)
             if self.query.combinator:
-                src = expr.get_source_expressions()[0]
+                src = resolved.get_source_expressions()[0]
                 # Relabel order by columns to raw numbers if this is a combined
                 # query; necessary since the columns can't be referenced by the
                 # fully qualified name and the simple column names may collide.
@@ -350,21 +353,20 @@ class SQLCompiler:
                     elif col_alias:
                         continue
                     if src == sel_expr:
-                        expr.set_source_expressions([RawSQL('%d' % (idx + 1), ())])
+                        resolved.set_source_expressions([RawSQL('%d' % (idx + 1), ())])
                         break
                 else:
                     raise DatabaseError('ORDER BY term does not match any column in the result set.')
-            resolved = expr.resolve_expression(
-                self.query, allow_joins=True, reuse=None)
             sql, params = self.compile(resolved)
             # Don't add the same column twice, but the order direction is
             # not taken into account so we strip it. When this entire method
             # is refactored into expressions, then we can check each part as we
             # generate it.
             without_ordering = self.ordering_parts.search(sql).group(1)
-            if (without_ordering, tuple(params)) in seen:
+            params_hash = make_hashable(params)
+            if (without_ordering, params_hash) in seen:
                 continue
-            seen.add((without_ordering, tuple(params)))
+            seen.add((without_ordering, params_hash))
             result.append((resolved, (sql, params, is_ref)))
         return result
 
@@ -429,7 +431,17 @@ class SQLCompiler:
                         *self.query.values_select,
                         *self.query.annotation_select,
                     ))
-                parts += (compiler.as_sql(),)
+                part_sql, part_args = compiler.as_sql()
+                if compiler.query.combinator:
+                    # Wrap in a subquery if wrapping in parentheses isn't
+                    # supported.
+                    if not features.supports_parentheses_in_compound:
+                        part_sql = 'SELECT * FROM ({})'.format(part_sql)
+                    # Add parentheses when combining with compound query if not
+                    # already added for all compound queries.
+                    elif not features.supports_slicing_ordering_in_compound:
+                        part_sql = '({})'.format(part_sql)
+                parts += ((part_sql, part_args),)
             except EmptyResultSet:
                 # Omit the empty queryset with UNION and with DIFFERENCE if the
                 # first queryset is nonempty.
@@ -549,9 +561,9 @@ class SQLCompiler:
                         # order_by = None
                         warnings.warn(
                             "%s QuerySet won't use Meta.ordering in Django 3.1. "
-                            "Add .order_by('%s') to retain the current query." % (
+                            "Add .order_by(%s) to retain the current query." % (
                                 self.query.model.__name__,
-                                "', '".join(self._meta_ordering)
+                                ', '.join(repr(f) for f in self._meta_ordering),
                             ),
                             RemovedInDjango31Warning,
                             stacklevel=4,

@@ -264,9 +264,7 @@ def caches_setting_for_tests(base=None, exclude=None, **params):
 
 class BaseCacheTests:
     # A common set of tests to apply to all cache backends
-
-    def setUp(self):
-        self.factory = RequestFactory()
+    factory = RequestFactory()
 
     def tearDown(self):
         cache.clear()
@@ -1087,7 +1085,7 @@ class DBCacheRouter:
     },
 )
 class CreateCacheTableForDBCacheTests(TestCase):
-    multi_db = True
+    databases = {'default', 'other'}
 
     @override_settings(DATABASE_ROUTERS=[DBCacheRouter()])
     def test_createcachetable_observes_database_router(self):
@@ -1584,11 +1582,9 @@ class DefaultNonExpiringCacheKeyTests(SimpleTestCase):
 )
 class CacheUtils(SimpleTestCase):
     """TestCase for django.utils.cache functions."""
-
-    def setUp(self):
-        self.host = 'www.example.com'
-        self.path = '/cache/test/'
-        self.factory = RequestFactory(HTTP_HOST=self.host)
+    host = 'www.example.com'
+    path = '/cache/test/'
+    factory = RequestFactory(HTTP_HOST=host)
 
     def tearDown(self):
         cache.clear()
@@ -1734,10 +1730,8 @@ class PrefixedCacheUtils(CacheUtils):
     },
 )
 class CacheHEADTest(SimpleTestCase):
-
-    def setUp(self):
-        self.path = '/cache/test/'
-        self.factory = RequestFactory()
+    path = '/cache/test/'
+    factory = RequestFactory()
 
     def tearDown(self):
         cache.clear()
@@ -1785,11 +1779,9 @@ class CacheHEADTest(SimpleTestCase):
         ('es', 'Spanish'),
     ],
 )
-class CacheI18nTest(TestCase):
-
-    def setUp(self):
-        self.path = '/cache/test/'
-        self.factory = RequestFactory()
+class CacheI18nTest(SimpleTestCase):
+    path = '/cache/test/'
+    factory = RequestFactory()
 
     def tearDown(self):
         cache.clear()
@@ -2014,10 +2006,9 @@ def csrf_view(request):
     },
 )
 class CacheMiddlewareTest(SimpleTestCase):
+    factory = RequestFactory()
 
     def setUp(self):
-        super().setUp()
-        self.factory = RequestFactory()
         self.default_cache = caches['default']
         self.other_cache = caches['other']
 
@@ -2226,9 +2217,8 @@ class TestWithTemplateResponse(SimpleTestCase):
     content being complete (which is not necessarily always the case
     with a TemplateResponse)
     """
-    def setUp(self):
-        self.path = '/cache/test/'
-        self.factory = RequestFactory()
+    path = '/cache/test/'
+    factory = RequestFactory()
 
     def tearDown(self):
         cache.clear()

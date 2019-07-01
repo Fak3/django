@@ -1,8 +1,11 @@
 import datetime
 from decimal import Decimal
 
-from django.db.models import Case, Count, F, Q, Sum, When
+from django.db.models import (
+    Avg, Case, Count, F, Q, StdDev, Sum, Variance, When,
+)
 from django.test import TestCase
+from django.test.utils import Approximate
 
 from .models import Author, Book, Publisher
 
@@ -39,6 +42,16 @@ class FilteredAggregateTests(TestCase):
     def test_filtered_aggregates(self):
         agg = Sum('age', filter=Q(name__startswith='test'))
         self.assertEqual(Author.objects.aggregate(age=agg)['age'], 200)
+
+    def test_filtered_numerical_aggregates(self):
+        for aggregate, expected_result in (
+            (Avg, Approximate(66.7, 1)),
+            (StdDev, Approximate(24.9, 1)),
+            (Variance, Approximate(622.2, 1)),
+        ):
+            with self.subTest(aggregate=aggregate.__name__):
+                agg = aggregate('age', filter=Q(name__startswith='test'))
+                self.assertEqual(Author.objects.aggregate(age=agg)['age'], expected_result)
 
     def test_double_filtered_aggregates(self):
         agg = Sum('age', filter=Q(Q(name='test2') & ~Q(name='test')))
@@ -79,3 +92,11 @@ class FilteredAggregateTests(TestCase):
         msg = 'Star cannot be used with filter. Please specify a field.'
         with self.assertRaisesMessage(ValueError, msg):
             Count('*', filter=Q(age=40))
+
+    def test_filtered_reused_subquery(self):
+        qs = Author.objects.annotate(
+            older_friends_count=Count('friends', filter=Q(friends__age__gt=F('age'))),
+        ).filter(
+            older_friends_count__gte=2,
+        )
+        self.assertEqual(qs.get(pk__in=qs.values('pk')), self.a1)

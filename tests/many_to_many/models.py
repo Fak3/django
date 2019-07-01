@@ -12,11 +12,11 @@ from django.db import models
 class Publication(models.Model):
     title = models.CharField(max_length=30)
 
-    def __str__(self):
-        return self.title
-
     class Meta:
         ordering = ('title',)
+
+    def __str__(self):
+        return self.title
 
 
 class Tag(models.Model):
@@ -27,6 +27,11 @@ class Tag(models.Model):
         return self.name
 
 
+class NoDeletedArticleManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().exclude(headline='deleted')
+
+
 class Article(models.Model):
     headline = models.CharField(max_length=100)
     # Assign a string as name to make sure the intermediary model is
@@ -34,11 +39,13 @@ class Article(models.Model):
     publications = models.ManyToManyField(Publication, name='publications')
     tags = models.ManyToManyField(Tag, related_name='tags')
 
-    def __str__(self):
-        return self.headline
+    objects = NoDeletedArticleManager()
 
     class Meta:
         ordering = ('headline',)
+
+    def __str__(self):
+        return self.headline
 
 
 # Models to test correct related_name inheritance
@@ -55,13 +62,3 @@ class InheritedArticleA(AbstractArticle):
 
 class InheritedArticleB(AbstractArticle):
     pass
-
-
-class NullableTargetArticle(models.Model):
-    headline = models.CharField(max_length=100)
-    publications = models.ManyToManyField(Publication, through='NullablePublicationThrough')
-
-
-class NullablePublicationThrough(models.Model):
-    article = models.ForeignKey(NullableTargetArticle, models.CASCADE)
-    publication = models.ForeignKey(Publication, models.CASCADE, null=True)

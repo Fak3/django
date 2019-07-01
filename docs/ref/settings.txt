@@ -388,7 +388,7 @@ See :setting:`SESSION_COOKIE_SAMESITE` for details about ``SameSite``.
 Default: ``False``
 
 Whether to use a secure cookie for the CSRF cookie. If this is set to ``True``,
-the cookie will be marked as "secure," which means browsers may ensure that the
+the cookie will be marked as "secure", which means browsers may ensure that the
 cookie is only sent with an HTTPS connection.
 
 .. setting:: CSRF_USE_SESSIONS
@@ -404,6 +404,12 @@ It requires the use of :mod:`django.contrib.sessions`.
 Storing the CSRF token in a cookie (Django's default) is safe, but storing it
 in the session is common practice in other web frameworks and therefore
 sometimes demanded by security auditors.
+
+Since the :ref:`default error views <error-views>` require the CSRF token,
+:class:`~django.contrib.sessions.middleware.SessionMiddleware` must appear in
+:setting:`MIDDLEWARE` before any middleware that may raise an exception to
+trigger an error view (such as :exc:`~django.core.exceptions.PermissionDenied`)
+if you're using ``CSRF_USE_SESSIONS``. See :ref:`middleware-ordering`.
 
 .. setting:: CSRF_FAILURE_VIEW
 
@@ -706,8 +712,8 @@ backend-specific.
 
 Supported by the PostgreSQL_ (``postgresql``) and MySQL_ (``mysql``) backends.
 
-.. _PostgreSQL: https://www.postgresql.org/docs/current/static/multibyte.html
-.. _MySQL: https://dev.mysql.com/doc/refman/en/charset-database.html
+.. _PostgreSQL: https://www.postgresql.org/docs/current/multibyte.html
+.. _MySQL: https://dev.mysql.com/doc/refman/en/charset-charsets.html
 
 .. setting:: TEST_COLLATION
 
@@ -777,11 +783,6 @@ the database state between tests if you don't have transactions). You can set
 this to ``False`` to speed up creation time if you don't have any test classes
 with :ref:`serialized_rollback=True <test-case-serialized-rollback>`.
 
-Don't set this to ``False`` if you want to use :option:`test --keepdb`
-and your test suite contains :class:`~django.test.TransactionTestCase` or
-doesn't support transactions, as this in-memory JSON string is used to restore
-the initial data migrations in these situations.
-
 .. setting:: TEST_TEMPLATE
 
 ``TEMPLATE``
@@ -792,7 +793,7 @@ This is a PostgreSQL-specific setting.
 The name of a `template`_ (e.g. ``'template0'``) from which to create the test
 database.
 
-.. _template: https://www.postgresql.org/docs/current/static/sql-createdatabase.html
+.. _template: https://www.postgresql.org/docs/current/sql-createdatabase.html
 
 .. setting:: TEST_CREATE
 
@@ -841,6 +842,20 @@ This is an Oracle-specific setting.
 
 The password to use when connecting to the Oracle database that will be used
 when running tests. If not provided, Django will generate a random password.
+
+.. setting:: TEST_ORACLE_MANAGED_FILES
+
+``ORACLE_MANAGED_FILES``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. versionadded:: 2.2
+
+Default: ``False``
+
+This is an Oracle-specific setting.
+
+If set to ``True``, Oracle Managed Files (OMF) tablespaces will be used.
+:setting:`DATAFILE` and :setting:`DATAFILE_TMP` will be ignored.
 
 .. setting:: TEST_TBLSPACE
 
@@ -1144,8 +1159,6 @@ requests being returned as "Bad Request (400)".
 
     The default :file:`settings.py` file created by :djadmin:`django-admin
     startproject <startproject>` sets ``DEBUG = True`` for convenience.
-
-.. _django/views/debug.py: https://github.com/django/django/blob/master/django/views/debug.py
 
 .. setting:: DEBUG_PROPAGATE_EXCEPTIONS
 
@@ -1810,9 +1823,7 @@ deletes the one.
 Default: A list of all available languages. This list is continually growing
 and including a copy here would inevitably become rapidly out of date. You can
 see the current list of translated languages by looking in
-``django/conf/global_settings.py`` (or view the `online source`_).
-
-.. _online source: https://github.com/django/django/blob/master/django/conf/global_settings.py
+:source:`django/conf/global_settings.py`.
 
 The list is a list of two-tuples in the format
 (:term:`language code<language code>`, ``language name``) -- for example,
@@ -1835,6 +1846,21 @@ Here's a sample settings file::
         ('de', _('German')),
         ('en', _('English')),
     ]
+
+.. setting:: LANGUAGES_BIDI
+
+``LANGUAGES_BIDI``
+------------------
+
+Default: A list of all language codes from the :setting:`LANGUAGES` setting
+that are written right-to-left. You can see the current list of these languages
+by looking in :source:`django/conf/global_settings.py`.
+
+The list contains :term:`language codes<language code>` for languages that are
+written right-to-left.
+
+Generally, the default value should suffice. Only set this setting if you want
+to restrict language selection to a subset of the Django-provided languages.
 
 .. setting:: LOCALE_PATHS
 
@@ -1872,9 +1898,7 @@ errors to an email log handler when :setting:`DEBUG` is ``False``. See also
 :ref:`configuring-logging`.
 
 You can see the default logging configuration by looking in
-``django/utils/log.py`` (or view the `online source`__).
-
-__ https://github.com/django/django/blob/master/django/utils/log.py
+:source:`django/utils/log.py`.
 
 .. setting:: LOGGING_CONFIG
 
@@ -2778,15 +2802,9 @@ The model to use to represent a User. See :ref:`auth-custom-user`.
 
 Default: ``'/accounts/profile/'``
 
-The URL where requests are redirected after login when the
-``contrib.auth.login`` view gets no ``next`` parameter.
-
-This is used by the :func:`~django.contrib.auth.decorators.login_required`
-decorator, for example.
-
-This setting also accepts :ref:`named URL patterns <naming-url-patterns>` which
-can be used to reduce configuration duplication since you don't have to define
-the URL in two places (``settings`` and URLconf).
+The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+redirected after login when the :class:`~django.contrib.auth.views.LoginView`
+doesn't get a ``next`` GET parameter.
 
 .. setting:: LOGIN_URL
 
@@ -2795,12 +2813,11 @@ the URL in two places (``settings`` and URLconf).
 
 Default: ``'/accounts/login/'``
 
-The URL where requests are redirected for login, especially when using the
-:func:`~django.contrib.auth.decorators.login_required` decorator.
-
-This setting also accepts :ref:`named URL patterns <naming-url-patterns>` which
-can be used to reduce configuration duplication since you don't have to define
-the URL in two places (``settings`` and URLconf).
+The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+redirected for login when using the
+:func:`~django.contrib.auth.decorators.login_required` decorator,
+:class:`~django.contrib.auth.mixins.LoginRequiredMixin`, or
+:class:`~django.contrib.auth.mixins.AccessMixin`.
 
 .. setting:: LOGOUT_REDIRECT_URL
 
@@ -2809,16 +2826,12 @@ the URL in two places (``settings`` and URLconf).
 
 Default: ``None``
 
-The URL where requests are redirected after a user logs out using
-:class:`~django.contrib.auth.views.LogoutView` (if the view doesn't get a
-``next_page`` argument).
+The URL or :ref:`named URL pattern <naming-url-patterns>` where requests are
+redirected after logout if :class:`~django.contrib.auth.views.LogoutView`
+doesn't have a ``next_page`` attribute.
 
 If ``None``, no redirect will be performed and the logout view will be
 rendered.
-
-This setting also accepts :ref:`named URL patterns <naming-url-patterns>` which
-can be used to reduce configuration duplication since you don't have to define
-the URL in two places (``settings`` and URLconf).
 
 .. setting:: PASSWORD_RESET_TIMEOUT_DAYS
 
@@ -2995,22 +3008,20 @@ This setting also affects cookies set by :mod:`django.contrib.messages`.
 
 Default: ``True``
 
-Whether to use ``HTTPOnly`` flag on the session cookie. If this is set to
-``True``, client-side JavaScript will not to be able to access the
-session cookie.
+Whether to use ``HttpOnly`` flag on the session cookie. If this is set to
+``True``, client-side JavaScript will not to be able to access the session
+cookie.
 
-HTTPOnly_ is a flag included in a Set-Cookie HTTP response header. It
-is not part of the :rfc:`2109` standard for cookies, and it isn't honored
-consistently by all browsers. However, when it is honored, it can be a
-useful way to mitigate the risk of a client side script accessing the
-protected cookie data.
+HttpOnly_ is a flag included in a Set-Cookie HTTP response header. It's part of
+the :rfc:`6265` standard for cookies and can be a useful way to mitigate the
+risk of a client-side script accessing the protected cookie data.
 
 This makes it less trivial for an attacker to escalate a cross-site scripting
 vulnerability into full hijacking of a user's session. There aren't many good
 reasons for turning this off. Your code shouldn't read session cookies from
 JavaScript.
 
-.. _HTTPOnly: https://www.owasp.org/index.php/HTTPOnly
+.. _HttpOnly: https://www.owasp.org/index.php/HttpOnly
 
 .. setting:: SESSION_COOKIE_NAME
 
@@ -3082,7 +3093,7 @@ Possible values for the setting are:
 Default: ``False``
 
 Whether to use a secure cookie for the session cookie. If this is set to
-``True``, the cookie will be marked as "secure," which means browsers may
+``True``, the cookie will be marked as "secure", which means browsers may
 ensure that the cookie is only sent under an HTTPS connection.
 
 Leaving this setting off isn't a good idea because an attacker could capture an
@@ -3411,6 +3422,7 @@ Globalization (``i18n``/``l10n``)
 * :setting:`LANGUAGE_COOKIE_NAME`
 * :setting:`LANGUAGE_COOKIE_PATH`
 * :setting:`LANGUAGES`
+* :setting:`LANGUAGES_BIDI`
 * :setting:`LOCALE_PATHS`
 * :setting:`MONTH_DAY_FORMAT`
 * :setting:`NUMBER_GROUPING`

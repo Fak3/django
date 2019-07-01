@@ -261,13 +261,13 @@ class LayerMapTest(TestCase):
 
     def test_model_inheritance(self):
         "Tests LayerMapping on inherited models.  See #12093."
-        icity_mapping = {'name': 'Name',
-                         'population': 'Population',
-                         'density': 'Density',
-                         'point': 'POINT',
-                         'dt': 'Created',
-                         }
-
+        icity_mapping = {
+            'name': 'Name',
+            'population': 'Population',
+            'density': 'Density',
+            'point': 'POINT',
+            'dt': 'Created',
+        }
         # Parent model has geometry field.
         lm1 = LayerMapping(ICity1, city_shp, icity_mapping)
         lm1.save()
@@ -341,7 +341,7 @@ class OtherRouter:
 
 @override_settings(DATABASE_ROUTERS=[OtherRouter()])
 class LayerMapRouterTest(TestCase):
-    multi_db = True
+    databases = {'default', 'other'}
 
     @unittest.skipUnless(len(settings.DATABASES) > 1, 'multiple databases required')
     def test_layermapping_default_db(self):

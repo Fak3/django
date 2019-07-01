@@ -48,14 +48,14 @@ class LayerMapping:
     "A class that maps OGR Layers to GeoDjango Models."
 
     # Acceptable 'base' types for a multi-geometry type.
-    MULTI_TYPES = {1: OGRGeomType('MultiPoint'),
-                   2: OGRGeomType('MultiLineString'),
-                   3: OGRGeomType('MultiPolygon'),
-                   OGRGeomType('Point25D').num: OGRGeomType('MultiPoint25D'),
-                   OGRGeomType('LineString25D').num: OGRGeomType('MultiLineString25D'),
-                   OGRGeomType('Polygon25D').num: OGRGeomType('MultiPolygon25D'),
-                   }
-
+    MULTI_TYPES = {
+        1: OGRGeomType('MultiPoint'),
+        2: OGRGeomType('MultiLineString'),
+        3: OGRGeomType('MultiPolygon'),
+        OGRGeomType('Point25D').num: OGRGeomType('MultiPoint25D'),
+        OGRGeomType('LineString25D').num: OGRGeomType('MultiLineString25D'),
+        OGRGeomType('Polygon25D').num: OGRGeomType('MultiPolygon25D'),
+    }
     # Acceptable Django field types and corresponding acceptable OGR
     # counterparts.
     FIELD_TYPES = {
@@ -594,7 +594,7 @@ class LayerMapping:
 
                 # Printing progress information, if requested.
                 if progress and num_feat % progress_interval == 0:
-                    stream.write('Processed %d features, saved %d …\n' % (num_feat, num_saved))
+                    stream.write('Processed %d features, saved %d ...\n' % (num_feat, num_saved))
 
             # Only used for status output purposes -- incremental saving uses the
             # values returned here.

@@ -92,7 +92,7 @@ class RawQuery:
     def get_columns(self):
         if self.cursor is None:
             self._execute_query()
-        converter = connections[self.using].introspection.column_name_converter
+        converter = connections[self.using].introspection.identifier_converter
         return [converter(column_meta[0])
                 for column_meta in self.cursor.description]
 
@@ -614,7 +614,7 @@ class Query:
             # really make sense (or return consistent value sets). Not worth
             # the extra complexity when you can write a real query instead.
             if self._extra and rhs._extra:
-                raise ValueError("When merging querysets using 'or', you cannot have extra(select=…) on both sides.")
+                raise ValueError("When merging querysets using 'or', you cannot have extra(select=...) on both sides.")
         self.extra.update(rhs.extra)
         extra_select_mask = set()
         if self.extra_select_mask is not None:
@@ -1309,7 +1309,7 @@ class Query:
             if isinstance(child, Node):
                 child_clause, needed_inner = self._add_q(
                     child, used_aliases, branch_negated,
-                    current_negated, allow_joins, split_subq)
+                    current_negated, allow_joins, split_subq, simple_col)
                 joinpromoter.add_votes(needed_inner)
             else:
                 child_clause, needed_inner = self.build_filter(
@@ -1600,6 +1600,8 @@ class Query:
             field_list = name.split(LOOKUP_SEP)
             join_info = self.setup_joins(field_list, self.get_meta(), self.get_initial_alias(), can_reuse=reuse)
             targets, final_alias, join_list = self.trim_joins(join_info.targets, join_info.joins, join_info.path)
+            if not allow_joins and len(join_list) > 1:
+                raise FieldError('Joined field references are not permitted in this query')
             if len(targets) > 1:
                 raise FieldError("Referencing multicolumn fields with F() objects "
                                  "isn't supported")

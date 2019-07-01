@@ -21,6 +21,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     truncates_names = True
     supports_tablespaces = True
     supports_sequence_reset = False
+    can_introspect_materialized_views = True
     can_introspect_time_field = False
     atomic_transactions = False
     supports_combined_alters = False
@@ -28,7 +29,6 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     requires_literal_defaults = True
     closed_cursor_error_class = InterfaceError
     bare_select_suffix = " FROM DUAL"
-    uppercases_column_names = True
     # select for update with limit can be achieved on Oracle, but not with the current backend.
     supports_select_for_update_with_limit = False
     supports_temporal_subtraction = True
@@ -56,6 +56,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_ignore_conflicts = False
     max_query_params = 2**16 - 1
     supports_partial_indexes = False
+    allows_multiple_constraints_on_same_fields = False
 
     @cached_property
     def has_fetch_offset_support(self):
@@ -63,4 +64,8 @@ class DatabaseFeatures(BaseDatabaseFeatures):
 
     @cached_property
     def allow_sliced_subqueries_with_in(self):
+        return self.has_fetch_offset_support
+
+    @cached_property
+    def supports_slicing_ordering_in_compound(self):
         return self.has_fetch_offset_support

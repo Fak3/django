@@ -152,9 +152,9 @@ def teardown_test_environment():
     del mail.outbox
 
 
-def setup_databases(verbosity, interactive, keepdb=False, debug_sql=False, parallel=0, **kwargs):
+def setup_databases(verbosity, interactive, keepdb=False, debug_sql=False, parallel=0, aliases=None, **kwargs):
     """Create the test databases."""
-    test_databases, mirrored_aliases = get_unique_databases_and_mirrors()
+    test_databases, mirrored_aliases = get_unique_databases_and_mirrors(aliases)
 
     old_names = []
 
@@ -238,7 +238,7 @@ def dependency_ordered(test_databases, dependencies):
     return ordered_test_databases
 
 
-def get_unique_databases_and_mirrors():
+def get_unique_databases_and_mirrors(aliases=None):
     """
     Figure out which databases actually need to be created.
 
@@ -250,6 +250,8 @@ def get_unique_databases_and_mirrors():
                       where all aliases share the same underlying database.
     - mirrored_aliases: mapping of mirror aliases to original aliases.
     """
+    if aliases is None:
+        aliases = connections
     mirrored_aliases = {}
     test_databases = {}
     dependencies = {}
@@ -262,7 +264,7 @@ def get_unique_databases_and_mirrors():
         if test_settings['MIRROR']:
             # If the database is marked as a test mirror, save the alias.
             mirrored_aliases[alias] = test_settings['MIRROR']
-        else:
+        elif alias in aliases:
             # Store a tuple with DB parameters that uniquely identify it.
             # If we have two aliases with the same values for that tuple,
             # we only need to create the test database once.
@@ -663,7 +665,7 @@ def patch_logger(logger_name, log_level, log_kwargs=False):
     Context manager that takes a named logger and the logging level
     and provides a simple mock-like list of messages received.
 
-    Use unitttest.assertLogs() if you only need Python 3 support. This
+    Use unittest.assertLogs() if you only need Python 3 support. This
     private API will be removed after Python 2 EOL in 2020 (#27753).
     """
     calls = []

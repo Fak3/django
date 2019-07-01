@@ -1043,6 +1043,17 @@ subclass::
     If you need to specify a dynamic order (for example depending on user or
     language) you can implement a :meth:`~ModelAdmin.get_ordering` method.
 
+    .. admonition:: Performance considerations with ordering and sorting
+
+        To ensure a deterministic ordering of results, the changelist adds
+        ``pk`` to the ordering if it can't find a single or unique together set
+        of fields that provide total ordering.
+
+        For example, if the default ordering is by a non-unique ``name`` field,
+        then the changelist is sorted by ``name`` and ``pk``. This could
+        perform poorly if you have a lot of rows and don't have an index on
+        ``name`` and ``pk``.
+
 .. attribute:: ModelAdmin.paginator
 
     The paginator class to be used for pagination. By default,
@@ -1067,9 +1078,9 @@ subclass::
     slug (e.g. substituting dashes for spaces; lowercasing ASCII letters; and
     removing various English stop words such as 'a', 'an', 'as', and similar).
 
-    Fields are prepopulated on add forms but not on change forms. It's usually
-    undesired that slugs change after an object is created (which would cause
-    an object's URL to change if the slug is used in it).
+    Prepopulated fields aren't modified by JavaScript after a value has been
+    saved. It's usually undesired that slugs change (which would cause an
+    object's URL to change if the slug is used in it).
 
     ``prepopulated_fields`` doesn't accept ``DateTimeField``, ``ForeignKey``,
     ``OneToOneField``, and ``ManyToManyField`` fields.
@@ -2234,6 +2245,7 @@ adds some of its own (the shared features are actually defined in the
 - :attr:`~ModelAdmin.filter_vertical`
 - :attr:`~ModelAdmin.ordering`
 - :attr:`~ModelAdmin.prepopulated_fields`
+- :meth:`~ModelAdmin.get_fieldsets`
 - :meth:`~ModelAdmin.get_queryset`
 - :attr:`~ModelAdmin.radio_fields`
 - :attr:`~ModelAdmin.readonly_fields`
@@ -2357,7 +2369,8 @@ The ``InlineModelAdmin`` class adds or customizes:
 .. method:: InlineModelAdmin.get_formset(request, obj=None, **kwargs)
 
     Returns a :class:`~django.forms.models.BaseInlineFormSet` class for use in
-    admin add/change views. See the example for
+    admin add/change views. ``obj`` is the parent object being edited or
+    ``None`` when adding a new parent. See the example for
     :class:`ModelAdmin.get_formsets_with_inlines`.
 
 .. method:: InlineModelAdmin.get_extra(request, obj=None, **kwargs)
@@ -2413,7 +2426,9 @@ The ``InlineModelAdmin`` class adds or customizes:
 
     .. versionchanged:: 2.1
 
-        The ``obj`` argument was added.
+        The ``obj`` argument was added. During the deprecation period, it may
+        also be ``None`` if third-party calls to ``has_add_permission()`` don't
+        provide it.
 
 .. method:: InlineModelAdmin.has_change_permission(request, obj=None)
 
@@ -2424,6 +2439,10 @@ The ``InlineModelAdmin`` class adds or customizes:
 
     Should return ``True`` if deleting an inline object is permitted, ``False``
     otherwise. ``obj`` is the parent object being edited.
+
+.. note::
+    The ``obj`` argument passed to ``InlineModelAdmin`` methods is the parent
+    object being edited or ``None`` when adding a new parent.
 
 Working with a model with two or more foreign keys to the same parent model
 ---------------------------------------------------------------------------

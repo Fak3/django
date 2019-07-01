@@ -143,7 +143,8 @@ Model fields
   appeared before support for null values was added in Django 2.1.*
 * **fields.E120**: ``CharField``\s must define a ``max_length`` attribute.
 * **fields.E121**: ``max_length`` must be a positive integer.
-* **fields.W122**: ``max_length`` is ignored when used with ``IntegerField``.
+* **fields.W122**: ``max_length`` is ignored when used with
+  ``<integer field type>``.
 * **fields.E130**: ``DecimalField``\s must define a ``decimal_places`` attribute.
 * **fields.E131**: ``decimal_places`` must be a non-negative integer.
 * **fields.E132**: ``DecimalField``\s must define a ``max_digits`` attribute.
@@ -301,6 +302,8 @@ Models
 * **models.E026**: The model cannot have more than one field with
   ``primary_key=True``.
 * **models.W027**: ``<database>`` does not support check constraints.
+* **models.E028**: ``db_table`` ``<db_table>`` is used by multiple models:
+  ``<model list>``.
 
 Security
 --------
@@ -461,6 +464,8 @@ The following checks are performed on your URL configuration:
   end with a slash.
 * **urls.E007**: The custom ``handlerXXX`` view ``'path.to.view'`` does not
   take the correct number of arguments (…).
+* **urls.E008**: The custom ``handlerXXX`` view ``'path.to.view'`` could not be
+  imported.
 
 ``contrib`` app checks
 ======================
@@ -652,12 +657,12 @@ The following checks are performed on the default
   :setting:`INSTALLED_APPS` in order to use the admin application.
 * **admin.E406**: :mod:`django.contrib.messages` must be in
   :setting:`INSTALLED_APPS` in order to use the admin application.
-* **admin.E407**: :mod:`django.contrib.sessions` must be in
-  :setting:`INSTALLED_APPS` in order to use the admin application.
 * **admin.E408**:
   :class:`django.contrib.auth.middleware.AuthenticationMiddleware` must be in
   :setting:`MIDDLEWARE` in order to use the admin application.
 * **admin.E409**: :class:`django.contrib.messages.middleware.MessageMiddleware`
+  must be in :setting:`MIDDLEWARE` in order to use the admin application.
+* **admin.E410**: :class:`django.contrib.sessions.middleware.SessionMiddleware`
   must be in :setting:`MIDDLEWARE` in order to use the admin application.
 
 ``auth``

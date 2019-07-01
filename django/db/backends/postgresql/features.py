@@ -1,3 +1,5 @@
+import operator
+
 from django.db.backends.base.features import BaseDatabaseFeatures
 from django.db.utils import InterfaceError
 from django.utils.functional import cached_property
@@ -19,6 +21,7 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     supports_transactions = True
     can_introspect_autofield = True
     can_introspect_ip_address_field = True
+    can_introspect_materialized_views = True
     can_introspect_small_integer_field = True
     can_distinct_on_fields = True
     can_rollback_ddl = True
@@ -64,10 +67,11 @@ class DatabaseFeatures(BaseDatabaseFeatures):
     def is_postgresql_10(self):
         return self.connection.pg_version >= 100000
 
-    has_select_for_update_skip_locked = is_postgresql_9_5
-    has_brin_index_support = is_postgresql_9_5
-    has_jsonb_agg = is_postgresql_9_5
-    has_brin_autosummarize = is_postgresql_10
-    has_gin_pending_list_limit = is_postgresql_9_5
-    supports_ignore_conflicts = is_postgresql_9_5
-    has_phraseto_tsquery = is_postgresql_9_6
+    has_select_for_update_skip_locked = property(operator.attrgetter('is_postgresql_9_5'))
+    has_brin_index_support = property(operator.attrgetter('is_postgresql_9_5'))
+    has_jsonb_agg = property(operator.attrgetter('is_postgresql_9_5'))
+    has_brin_autosummarize = property(operator.attrgetter('is_postgresql_10'))
+    has_gin_pending_list_limit = property(operator.attrgetter('is_postgresql_9_5'))
+    supports_ignore_conflicts = property(operator.attrgetter('is_postgresql_9_5'))
+    has_phraseto_tsquery = property(operator.attrgetter('is_postgresql_9_6'))
+    supports_table_partitions = property(operator.attrgetter('is_postgresql_10'))

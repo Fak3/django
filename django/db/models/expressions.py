@@ -807,7 +807,7 @@ class Ref(Expression):
         return self
 
     def as_sql(self, compiler, connection):
-        return "%s" % connection.ops.quote_name(self.refs), []
+        return connection.ops.quote_name(self.refs), []
 
     def get_group_by_cols(self):
         return [self]
@@ -994,6 +994,7 @@ class Subquery(Expression):
     query which will be resolved when it is applied to that query.
     """
     template = '(%(subquery)s)'
+    contains_aggregate = False
 
     def __init__(self, queryset, output_field=None, **extra):
         self.queryset = queryset
@@ -1292,14 +1293,14 @@ class WindowFrame(Expression):
     template = '%(frame_type)s BETWEEN %(start)s AND %(end)s'
 
     def __init__(self, start=None, end=None):
-        self.start = start
-        self.end = end
+        self.start = Value(start)
+        self.end = Value(end)
 
     def set_source_expressions(self, exprs):
         self.start, self.end = exprs
 
     def get_source_expressions(self):
-        return [Value(self.start), Value(self.end)]
+        return [self.start, self.end]
 
     def as_sql(self, compiler, connection):
         connection.ops.check_expression_support(self)
@@ -1317,16 +1318,16 @@ class WindowFrame(Expression):
         return []
 
     def __str__(self):
-        if self.start is not None and self.start < 0:
-            start = '%d %s' % (abs(self.start), connection.ops.PRECEDING)
-        elif self.start is not None and self.start == 0:
+        if self.start.value is not None and self.start.value < 0:
+            start = '%d %s' % (abs(self.start.value), connection.ops.PRECEDING)
+        elif self.start.value is not None and self.start.value == 0:
             start = connection.ops.CURRENT_ROW
         else:
             start = connection.ops.UNBOUNDED_PRECEDING
 
-        if self.end is not None and self.end > 0:
-            end = '%d %s' % (self.end, connection.ops.FOLLOWING)
-        elif self.end is not None and self.end == 0:
+        if self.end.value is not None and self.end.value > 0:
+            end = '%d %s' % (self.end.value, connection.ops.FOLLOWING)
+        elif self.end.value is not None and self.end.value == 0:
             end = connection.ops.CURRENT_ROW
         else:
             end = connection.ops.UNBOUNDED_FOLLOWING

@@ -323,9 +323,13 @@ class MailTests(HeadersCheckMixin, SimpleTestCase):
         )
 
     def test_unicode_headers(self):
-        email = EmailMessage("Gżegżółka", "Content", "from@example.com", ["to@example.com"],
-                             headers={"Sender": '"Firstname Sürname" <sender@example.com>',
-                                      "Comments": 'My Sürname is non-ASCII'})
+        email = EmailMessage(
+            'Gżegżółka', 'Content', 'from@example.com', ['to@example.com'],
+            headers={
+                'Sender': '"Firstname Sürname" <sender@example.com>',
+                'Comments': 'My Sürname is non-ASCII',
+            },
+        )
         message = email.message()
         self.assertEqual(message['Subject'], '=?utf-8?b?R8W8ZWfFvMOzxYJrYQ==?=')
         self.assertEqual(message['Sender'], '=?utf-8?q?Firstname_S=C3=BCrname?= <sender@example.com>')
@@ -1527,7 +1531,12 @@ class SMTPBackendTests(BaseEmailBackendTests, SMTPBackendTestsBase):
         backend.connection = True
         backend.open = lambda: None
         email = EmailMessage('Subject', 'Content', 'from@example.com', ['to@example.com'])
-        self.assertEqual(backend.send_messages([email]), None)
+        self.assertEqual(backend.send_messages([email]), 0)
+
+    def test_send_messages_empty_list(self):
+        backend = smtp.EmailBackend()
+        backend.connection = True
+        self.assertEqual(backend.send_messages([]), 0)
 
     def test_send_messages_zero_sent(self):
         """A message isn't sent if it doesn't have any recipients."""

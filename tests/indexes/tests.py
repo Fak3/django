@@ -9,6 +9,7 @@ from django.db.models.query_utils import Q
 from django.test import (
     TestCase, TransactionTestCase, skipIfDBFeature, skipUnlessDBFeature,
 )
+from django.test.utils import override_settings
 from django.utils import timezone
 
 from .models import (
@@ -25,12 +26,12 @@ class SchemaIndexesTests(TestCase):
         """
         Index names should be deterministic.
         """
-        with connection.schema_editor() as editor:
-            index_name = editor._create_index_name(
-                table_name=Article._meta.db_table,
-                column_names=("c1",),
-                suffix="123",
-            )
+        editor = connection.schema_editor()
+        index_name = editor._create_index_name(
+            table_name=Article._meta.db_table,
+            column_names=("c1",),
+            suffix="123",
+        )
         self.assertEqual(index_name, "indexes_article_c1_a52bd80b123")
 
     def test_index_name(self):
@@ -41,12 +42,12 @@ class SchemaIndexesTests(TestCase):
             * Include a deterministic hash.
         """
         long_name = 'l%sng' % ('o' * 100)
-        with connection.schema_editor() as editor:
-            index_name = editor._create_index_name(
-                table_name=Article._meta.db_table,
-                column_names=('c1', 'c2', long_name),
-                suffix='ix',
-            )
+        editor = connection.schema_editor()
+        index_name = editor._create_index_name(
+            table_name=Article._meta.db_table,
+            column_names=('c1', 'c2', long_name),
+            suffix='ix',
+        )
         expected = {
             'mysql': 'indexes_article_c1_c2_looooooooooooooooooo_255179b2ix',
             'oracle': 'indexes_a_c1_c2_loo_255179b2ix',
@@ -237,8 +238,11 @@ class SchemaIndexesMySQLTests(TransactionTestCase):
 
 
 @skipUnlessDBFeature('supports_partial_indexes')
-class PartialIndexTests(TestCase):
+# SQLite doesn't support timezone-aware datetimes when USE_TZ is False.
+@override_settings(USE_TZ=True)
+class PartialIndexTests(TransactionTestCase):
     # Schema editor is used to create the index to test that it works.
+    available_apps = ['indexes']
 
     def test_partial_index(self):
         with connection.schema_editor() as editor:
@@ -263,6 +267,7 @@ class PartialIndexTests(TestCase):
             self.assertIn(index.name, connection.introspection.get_constraints(
                 cursor=connection.cursor(), table_name=Article._meta.db_table,
             ))
+            editor.remove_index(index=index, model=Article)
 
     def test_integer_restriction_partial(self):
         with connection.schema_editor() as editor:
@@ -279,6 +284,7 @@ class PartialIndexTests(TestCase):
             self.assertIn(index.name, connection.introspection.get_constraints(
                 cursor=connection.cursor(), table_name=Article._meta.db_table,
             ))
+            editor.remove_index(index=index, model=Article)
 
     def test_boolean_restriction_partial(self):
         with connection.schema_editor() as editor:
@@ -295,7 +301,9 @@ class PartialIndexTests(TestCase):
             self.assertIn(index.name, connection.introspection.get_constraints(
                 cursor=connection.cursor(), table_name=Article._meta.db_table,
             ))
+            editor.remove_index(index=index, model=Article)
 
+    @skipUnlessDBFeature('supports_functions_in_partial_indexes')
     def test_multiple_conditions(self):
         with connection.schema_editor() as editor:
             index = Index(
@@ -323,6 +331,7 @@ class PartialIndexTests(TestCase):
             self.assertIn(index.name, connection.introspection.get_constraints(
                 cursor=connection.cursor(), table_name=Article._meta.db_table,
             ))
+            editor.remove_index(index=index, model=Article)
 
     def test_is_null_condition(self):
         with connection.schema_editor() as editor:
@@ -339,3 +348,4 @@ class PartialIndexTests(TestCase):
             self.assertIn(index.name, connection.introspection.get_constraints(
                 cursor=connection.cursor(), table_name=Article._meta.db_table,
             ))
+            editor.remove_index(index=index, model=Article)

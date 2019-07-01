@@ -195,7 +195,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
         return connection
 
     def ensure_timezone(self):
-        self.ensure_connection()
+        if self.connection is None:
+            return False
         conn_timezone_name = self.connection.get_parameter_status('TimeZone')
         timezone_name = self.timezone_name
         if timezone_name and conn_timezone_name != timezone_name:
@@ -273,7 +274,6 @@ class DatabaseWrapper(BaseDatabaseWrapper):
                     return self.__class__(
                         {**self.settings_dict, 'NAME': connection.settings_dict['NAME']},
                         alias=self.alias,
-                        allow_thread_sharing=False,
                     )
         return nodb_connection
 
